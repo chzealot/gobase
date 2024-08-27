@@ -2,11 +2,16 @@ package utils
 
 import (
 	"fmt"
+	"github.com/chzealot/gobase/constants"
 	"github.com/chzealot/gobase/logger"
 	"io"
 	"net/http"
 	"strings"
 )
+
+type getHeaderInterface interface {
+	GetHeader(key string) string
+}
 
 func DumpHttpRequest(r *http.Request) {
 	body, err := io.ReadAll(r.Body)
@@ -25,4 +30,12 @@ func DumpHttpRequest(r *http.Request) {
 		r.Host,
 		strings.Join(headers, "\n"),
 		string(body))
+}
+
+func GetHttpProto(c getHeaderInterface) string {
+	scheme := "http"
+	if c.GetHeader(constants.HeaderForwardedProto) == "https" {
+		scheme = "https"
+	}
+	return scheme
 }
