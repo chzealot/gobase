@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"errors"
 	"github.com/duke-git/lancet/v2/slice"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -20,6 +21,14 @@ const (
 	InfoLevel  = Level(zap.InfoLevel)
 	WarnLevel  = Level(zap.WarnLevel)
 	ErrorLevel = Level(zap.ErrorLevel)
+)
+
+// 不导出类型，防止外部包覆盖
+type contextKey struct{ name string }
+
+var (
+	traceIDKey = contextKey{"trace_id"}
+	spanIDKey  = contextKey{"span_id"}
 )
 
 var (
@@ -146,4 +155,103 @@ func Errorf(fmt string, args ...interface{}) {
 
 func Errorw(msg string, keysAndValues ...interface{}) {
 	DefaultSugarLogger.Errorw(msg, keysAndValues...)
+}
+
+// GetTraceID 从 context 中获取 trace_id，如果不存在返回空字符串
+func GetTraceID(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	if traceID, ok := ctx.Value(traceIDKey).(string); ok {
+		return traceID
+	}
+	return ""
+}
+
+// GetSpanID 从 context 中获取 span_id，如果不存在返回空字符串
+func GetSpanID(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	if spanID, ok := ctx.Value(spanIDKey).(string); ok {
+		return spanID
+	}
+	return ""
+}
+
+// WithTraceID 将 trace_id 添加到 context 中
+func WithTraceID(ctx context.Context, traceID string) context.Context {
+	return context.WithValue(ctx, traceIDKey, traceID)
+}
+
+// WithSpanID 将 span_id 添加到 context 中
+func WithSpanID(ctx context.Context, spanID string) context.Context {
+	return context.WithValue(ctx, spanIDKey, spanID)
+}
+
+// WithTrace 同时设置 trace_id 和 span_id 到 context 中
+func WithTrace(ctx context.Context, traceID, spanID string) context.Context {
+	ctx = context.WithValue(ctx, traceIDKey, traceID)
+	ctx = context.WithValue(ctx, spanIDKey, spanID)
+	return ctx
+}
+
+// DebugfCtx 使用 context 记录 Debug 级别的格式化日志，自动添加 trace_id 和 span_id
+func DebugfCtx(ctx context.Context, format string, args ...interface{}) {
+	traceID := GetTraceID(ctx)
+	spanID := GetSpanID(ctx)
+	DefaultSugarLogger.Debugw(format, "trace_id", traceID, "span_id", spanID, "args", args)
+}
+
+// DebugwCtx 使用 context 记录 Debug 级别的结构化日志，自动添加 trace_id 和 span_id
+func DebugwCtx(ctx context.Context, msg string, keysAndValues ...interface{}) {
+	traceID := GetTraceID(ctx)
+	spanID := GetSpanID(ctx)
+	kvs := append([]interface{}{"trace_id", traceID, "span_id", spanID}, keysAndValues...)
+	DefaultSugarLogger.Debugw(msg, kvs...)
+}
+
+// InfofCtx 使用 context 记录 Info 级别的格式化日志，自动添加 trace_id 和 span_id
+func InfofCtx(ctx context.Context, format string, args ...interface{}) {
+	traceID := GetTraceID(ctx)
+	spanID := GetSpanID(ctx)
+	DefaultSugarLogger.Infow(format, "trace_id", traceID, "span_id", spanID, "args", args)
+}
+
+// InfowCtx 使用 context 记录 Info 级别的结构化日志，自动添加 trace_id 和 span_id
+func InfowCtx(ctx context.Context, msg string, keysAndValues ...interface{}) {
+	traceID := GetTraceID(ctx)
+	spanID := GetSpanID(ctx)
+	kvs := append([]interface{}{"trace_id", traceID, "span_id", spanID}, keysAndValues...)
+	DefaultSugarLogger.Infow(msg, kvs...)
+}
+
+// WarnfCtx 使用 context 记录 Warn 级别的格式化日志，自动添加 trace_id 和 span_id
+func WarnfCtx(ctx context.Context, format string, args ...interface{}) {
+	traceID := GetTraceID(ctx)
+	spanID := GetSpanID(ctx)
+	DefaultSugarLogger.Warnw(format, "trace_id", traceID, "span_id", spanID, "args", args)
+}
+
+// WarnwCtx 使用 context 记录 Warn 级别的结构化日志，自动添加 trace_id 和 span_id
+func WarnwCtx(ctx context.Context, msg string, keysAndValues ...interface{}) {
+	traceID := GetTraceID(ctx)
+	spanID := GetSpanID(ctx)
+	kvs := append([]interface{}{"trace_id", traceID, "span_id", spanID}, keysAndValues...)
+	DefaultSugarLogger.Warnw(msg, kvs...)
+}
+
+// ErrorfCtx 使用 context 记录 Error 级别的格式化日志，自动添加 trace_id 和 span_id
+func ErrorfCtx(ctx context.Context, format string, args ...interface{}) {
+	traceID := GetTraceID(ctx)
+	spanID := GetSpanID(ctx)
+	DefaultSugarLogger.Errorw(format, "trace_id", traceID, "span_id", spanID, "args", args)
+}
+
+// ErrorwCtx 使用 context 记录 Error 级别的结构化日志，自动添加 trace_id 和 span_id
+func ErrorwCtx(ctx context.Context, msg string, keysAndValues ...interface{}) {
+	traceID := GetTraceID(ctx)
+	spanID := GetSpanID(ctx)
+	kvs := append([]interface{}{"trace_id", traceID, "span_id", spanID}, keysAndValues...)
+	DefaultSugarLogger.Errorw(msg, kvs...)
 }
