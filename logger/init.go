@@ -3,15 +3,16 @@ package logger
 import (
 	"context"
 	"errors"
-	"github.com/duke-git/lancet/v2/slice"
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"io"
 	"os"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/duke-git/lancet/v2/slice"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Level zapcore.Level
@@ -49,10 +50,14 @@ func enableDebug() {
 }
 
 func InitWithConfig(config Config) error {
-	if debug, ok := os.LookupEnv("DEBUG"); ok {
-		if slice.Contain([]string{"1", "true", "on", "enalbe"}, strings.ToLower(debug)) {
-			enableDebug()
+	if config.DebugMode == DebugModeFromEnv {
+		if debug, ok := os.LookupEnv("DEBUG"); ok {
+			if slice.Contain([]string{"1", "true", "on", "enalbe"}, strings.ToLower(debug)) {
+				enableDebug()
+			}
 		}
+	} else if config.DebugMode == DebugModeOn {
+		enableDebug()
 	}
 	if config.AppName == "" {
 		return errors.New("empty app name")
@@ -200,7 +205,9 @@ func WithTrace(ctx context.Context, traceID, spanID string) context.Context {
 func DebugfCtx(ctx context.Context, format string, args ...interface{}) {
 	traceID := GetTraceID(ctx)
 	spanID := GetSpanID(ctx)
-	DefaultSugarLogger.Debugw(format, "trace_id", traceID, "span_id", spanID, "args", args)
+	newFormat := "trace_id=%s, span_id=%s, " + format
+	newArgs := append([]interface{}{traceID, spanID}, args...)
+	DefaultSugarLogger.Debugf(newFormat, newArgs...)
 }
 
 // DebugwCtx 使用 context 记录 Debug 级别的结构化日志，自动添加 trace_id 和 span_id
@@ -215,7 +222,9 @@ func DebugwCtx(ctx context.Context, msg string, keysAndValues ...interface{}) {
 func InfofCtx(ctx context.Context, format string, args ...interface{}) {
 	traceID := GetTraceID(ctx)
 	spanID := GetSpanID(ctx)
-	DefaultSugarLogger.Infow(format, "trace_id", traceID, "span_id", spanID, "args", args)
+	newFormat := "trace_id=%s, span_id=%s, " + format
+	newArgs := append([]interface{}{traceID, spanID}, args...)
+	DefaultSugarLogger.Infof(newFormat, newArgs...)
 }
 
 // InfowCtx 使用 context 记录 Info 级别的结构化日志，自动添加 trace_id 和 span_id
@@ -230,7 +239,9 @@ func InfowCtx(ctx context.Context, msg string, keysAndValues ...interface{}) {
 func WarnfCtx(ctx context.Context, format string, args ...interface{}) {
 	traceID := GetTraceID(ctx)
 	spanID := GetSpanID(ctx)
-	DefaultSugarLogger.Warnw(format, "trace_id", traceID, "span_id", spanID, "args", args)
+	newFormat := "trace_id=%s, span_id=%s, " + format
+	newArgs := append([]interface{}{traceID, spanID}, args...)
+	DefaultSugarLogger.Warnf(newFormat, newArgs...)
 }
 
 // WarnwCtx 使用 context 记录 Warn 级别的结构化日志，自动添加 trace_id 和 span_id
@@ -245,7 +256,9 @@ func WarnwCtx(ctx context.Context, msg string, keysAndValues ...interface{}) {
 func ErrorfCtx(ctx context.Context, format string, args ...interface{}) {
 	traceID := GetTraceID(ctx)
 	spanID := GetSpanID(ctx)
-	DefaultSugarLogger.Errorw(format, "trace_id", traceID, "span_id", spanID, "args", args)
+	newFormat := "trace_id=%s, span_id=%s, " + format
+	newArgs := append([]interface{}{traceID, spanID}, args...)
+	DefaultSugarLogger.Errorf(newFormat, newArgs...)
 }
 
 // ErrorwCtx 使用 context 记录 Error 级别的结构化日志，自动添加 trace_id 和 span_id
